@@ -224,7 +224,7 @@ function getAudioCtx() {
  * type – 'sine' | 'square' | 'triangle' | 'sawtooth'
  * volume – głośność 0..1 (np. 0.08)
  */
-function playBeep(durationSec = 1.5, freqHz = 2200, type = 'sine', volume = 0.08) {
+function playBeep(durationSec = 1.0, freqHz = 3200, type = 'sine', volume = 0.08) {
   const ctx = getAudioCtx();
   const now = ctx.currentTime;
 
