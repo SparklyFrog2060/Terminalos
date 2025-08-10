@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Symulator terminala płatniczego – Karta i BLIK</title>
+  <style>
+    :root{
+      --terminal-bg:#1a1f28;
+      --terminal-edge:#0f131a;
+      --screen-bg:#0b0f14;
+      --screen-glow:#19b5fe33;
+      --text:#e8eef6;
+      --muted:#9fb0c4;
+      --accent:#19b5fe;
+      --ok:#18c37e;
+      --warn:#ffcc33;
+      --err:#ff4757;
+      --key:#232a36;
+      --key-hover:#2b3443;
+      --side:#202633;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      background:radial-gradient(1000px 600px at 70% 20%, #10141b, #07090c);
+      color:var(--text);
+      font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans";
+    }
+    .terminal{
+      position:relative;
+      width: 380px;
+      background:linear-gradient(180deg, var(--terminal-bg), var(--terminal-edge));
+      border-radius:24px;
+      padding:18px 12px 14px;
+      box-shadow: 0 30px 80px #0009, inset 0 1px 0 #ffffff15, inset 0 -6px 12px #0008;
+    }
+    .bezel{
+      border-radius:18px;
+      padding:12px;
+      background:linear-gradient(180deg, #0e131b, #0a0e14);
+      box-shadow: inset 0 0 0 1px #ffffff10, inset 0 0 0 2px #00000080;
+    }
+    .screen{
+      position:relative;
+      height: 220px;
+      background:
+        radial-gradient(400px 140px at 50% 0%, #1f2a3a44 0 50%, transparent 60%),
+        var(--screen-bg);
+      border-radius:14px;
+      box-shadow:
+        inset 0 0 0 1px #ffffff12,
+        inset 0 0 0 2px #00000090,
+        0 0 40px var(--screen-glow);
+      padding:14px 16px;
+      overflow:hidden;
+      cursor:default;
+      user-select:none;
+    }
+    .screen.clickable{ cursor: pointer; box-shadow: inset 0 0 0 1px #ffffff1a, 0 0 0 2px #19b5fe44, 0 0 28px #19b5fe33; }
+    .statusbar{
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:12px; color:var(--muted); opacity:.95; letter-spacing:.2px;
+      margin-bottom:6px;
+    }
+    .merchant{ font-weight:600; color:#cfe3ff; }
+    .time{ font-variant-numeric:tabular-nums; }
+    .content{
+      height: 160px;
+      display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px;
+      text-align:center;
+    }
+    .amount{
+      font-size:28px; font-weight:700; letter-spacing:.5px;
+    }
+    .hint{ color:#b7c6da; font-size:14px; }
+    .nfc{
+      width:64px; height:48px; opacity:.9;
+      filter: drop-shadow(0 6px 10px #0007);
+    }
+    .row{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;}
+    .badge{
+      font-size:12px; padding:4px 8px; border-radius:999px; background:#1a2433; color:#bcd0ea;
+      border:1px solid #314158;
+    }
+    .spinner{
+      width:22px; height:22px; border:3px solid #2b3a51; border-top-color:var(--accent);
+      border-radius:50%; animation:spin 1s linear infinite; margin-top:2px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .result{
+      font-size:18px; font-weight:600; padding:8px 12px; border-radius:10px; margin-top:6px;
+    }
+    .ok{ color:#eafff5; background:#0d2a20; border:1px solid #1c6f4e;}
+    .err{ color:#ffecec; background:#2a0d0d; border:1px solid #7f2b2b;}
+
+    .layout{
+      margin-top:12px;
+      display:grid; grid-template-columns: 1fr auto; gap:10px;
+    }
+    .keypad{
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;
+    }
+    .key{
+      height:52px; border-radius:12px; background:var(--key); color:var(--text);
+      display:grid; place-items:center; font-weight:700; font-size:18px;
+      box-shadow: inset 0 -3px 0 #0006, 0 2px 0 #0008;
+      user-select:none; cursor:pointer;
+      transition: transform .03s ease, background .15s ease;
+    }
+    .key:active{ transform: translateY(1px); }
+    .key:hover{ background:var(--key-hover); }
+    .key.fn{ font-size:14px; }
+    .key.red{ background: linear-gradient(#6b2226, #4a1619); border:1px solid #cc4b58; }
+    .key.yellow{ background: linear-gradient(#6b5a22, #4a3f16); border:1px solid #e0b34a; }
+    .key.green{ background: linear-gradient(#226b42, #164a2e); border:1px solid #49cc8a; }
+    .side{
+      display:flex; flex-direction:column; gap:10px; padding-left:4px;
+    }
+    .side .skey{
+      width:64px; height:42px; border-radius:10px; background:var(--side); color:#cfe3ff;
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;
+      border:1px solid #2e3a4f; box-shadow: inset 0 -3px 0 #0006;
+      cursor:pointer; user-select:none;
+    }
+    .skey:active{ transform: translateY(1px); }
+    .skey.blik{ background: linear-gradient(180deg, #1c304a, #152538); border-color:#315a8d; color:#eaf4ff; }
+    .softline{
+      margin-top:6px; font-size:12px; color:#9fb0c4; text-align:center;
+    }
+    .field{
+      display:flex; align-items:center; gap:8px; background:#0f1620; border:1px solid #2a394f; border-radius:10px; padding:10px 12px;
+      min-width: 230px; justify-content:center;
+      font-variant-numeric: tabular-nums;
+    }
+    .field .label{ color:#9fb0c4; font-size:12px; text-transform:uppercase; letter-spacing:.7px;}
+    .field .value{ font-size:20px; font-weight:700; letter-spacing:1px; }
+    .dots{
+      display:inline-block; letter-spacing:2px; min-width: 86px;
+    }
+    .caption{ font-size:12px; color:#8ea5c5;}
+    .tiny{ font-size:11px; color:#7f93ac;}
+    .contactless-symbol{
+      width:64px; height:48px;
+    }
+    .cards-row svg{ height:16px; width:auto; opacity:.9; }
+    .brand{
+      position:absolute; left:12px; bottom:10px; font-size:11px; color:#7890ac;
+      letter-spacing:.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal" role="application" aria-label="Symulator terminala płatniczego">
+    <div class="bezel">
+      <div id="screen" class="screen" aria-live="polite">
+        <div class="statusbar">
+          <div class="merchant">Sklep Demo • TID 12345678</div>
+          <div class="time" id="time">--:--</div>
+        </div>
+        <div class="content" id="content">
+          <!-- Dynamicznie wypełniane -->
+        </div>
+        <div class="brand">v1.0 • PLN</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="keypad" aria-label="Klawiatura terminala">
+        <div class="key" data-key="1">1</div>
+        <div class="key" data-key="2">2</div>
+        <div class="key" data-key="3">3</div>
+        <div class="key" data-key="4">4</div>
+        <div class="key" data-key="5">5</div>
+        <div class="key" data-key="6">6</div>
+        <div class="key" data-key="7">7</div>
+        <div class="key" data-key="8">8</div>
+        <div class="key" data-key="9">9</div>
+        <div class="key red fn" data-action="cancel">Anuluj</div>
+        <div class="key" data-key="0">0</div>
+        <div class="key yellow fn" data-action="clear">Wyczyść</div>
+        <div class="key green fn" style="grid-column:1 / span 3" data-action="ok">OK</div>
+      </div>
+
+      <div class="side" aria-label="Przyciski funkcyjne">
+        <div class="skey blik" id="blikBtn" title="Płatność BLIK">BLIK</div>
+        <div class="skey" title="F2">F2</div>
+        <div class="skey" title="F3">F3</div>
+      </div>
+    </div>
+
+    <div class="softline">Wskazówka: przy poleceniu “Przyłóż kartę” kliknij w ekran, aby zasymulować zbliżenie.</div>
+  </div>
+
+  <script>
+    // Prosty zegar
+    const timeEl = document.getElementById('time');
+    const tick = () => {
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      timeEl.textContent = hh + ':' + mm;
+    };
+    tick(); setInterval(tick, 30_000);
+
+    // Stan aplikacji
+    const screen = document.getElementById('screen');
+    const content = document.getElementById('content');
+    const blikBtn = document.getElementById('blikBtn');
+    const keypad = document.querySelector('.keypad');
+
+    const State = {
+      IDLE: 'idle',
+      AMOUNT_ENTRY: 'amount_entry',
+      READY_FOR_CARD: 'ready_for_card',
+      CARD_PROCESSING: 'card_processing',
+      BLIK_ENTRY: 'blik_entry',
+      BLIK_WAIT: 'blik_wait',
+      RESULT: 'result'
+    };
+
+    let state = State.IDLE;
+    let amountMinor = 0;          // grosze (np. 1234 = 12,34 PLN)
+    let amountEntry = '';         // do wprowadzania kwoty
+    let blikCode = '';            // 6 cyfr
+    let timer = null;
+
+    function formatPLN(minor){
+      const isNeg = minor < 0;
+      const abs = Math.abs(minor);
+      const zloty = Math.floor(abs / 100);
+      const grosze = String(abs % 100).padStart(2,'0');
+      return (isNeg ? '-' : '') + zloty.toLocaleString('pl-PL') + ',' + grosze + ' PLN';
+    }
+
+    function render(){
+      screen.classList.remove('clickable');
+      switch(state){
+        case State.IDLE: {
+          content.innerHTML = `
+            <div class="caption">Terminal gotowy</div>
+            <div class="field" aria-live="polite">
+              <div class="label">Kwota</div>
+              <div class="value">${amountEntry
+                ? formatPLN(parseInt(amountEntry || '0',10))
+                : '0,00 PLN'}</div>
+            </div>
+            <div class="hint">Wpisz kwotę i naciśnij zielony “OK”<br/>lub naciśnij przycisk po prawej, by wybrać <b>BLIK</b>.</div>
+            <div class="row cards-row">
+              <span class="badge">Karta</span>
+              <span class="badge">Zbliżeniowo</span>
+              <span class="badge">BLIK</span>
+            </div>
+          `;
+          break;
+        }
+        case State.AMOUNT_ENTRY: {
+          content.innerHTML = `
+            <div class="caption">Wprowadzanie kwoty</div>
+            <div class="field">
+              <div class="label">Kwota</div>
+              <div class="value">${formatPLN(parseInt(amountEntry||'0',10))}</div>
+            </div>
+            <div class="hint">Naciśnij “OK”, aby przejść do płatności kartą.</div>
+          `;
+          break;
+        }
+        case State.READY_FOR_CARD: {
+          screen.classList.add('clickable');
+          content.innerHTML = `
+            <div class="amount">${formatPLN(amountMinor)}</div>
+            <svg class="contactless-symbol" viewBox="0 0 64 48" aria-hidden="true">
+              <path fill="#19b5fe" d="M21 24c0-5.2 2.2-9.9 5.6-13.2l2.2 2.2C26 16 24 19.8 24 24s2 8 4.8 11l-2.2 2.2C23.2 33.9 21 29.2 21 24z"/>
+              <path fill="#19b5fe" d="M31 24c0-6.9 3-13.1 7.7-17.3l2.2 2.2C37 12.7 35 18.1 35 24c0 5.9 2 11.3 5.9 15.1l-2.2 2.2C34 37.1 31 30.9 31 24z"/>
+              <path fill="#19b5fe" d="M41 24c0-8.4 3.7-16 9.6-21.2l2.2 2.2C48 9.7 45 16.5 45 24s3 14.3 7.8 19l-2.2 2.2C44.7 40 41 32.4 41 24z"/>
+            </svg>
+            <div class="hint"><b>Przyłóż kartę</b> do czytnika (kliknij w ekran)</div>
+            <div class="tiny">Możesz też włożyć/przeciągnąć kartę – tutaj symulujemy zbliżenie kliknięciem.</div>
+          `;
+          break;
+        }
+        case State.CARD_PROCESSING: {
+          content.innerHTML = `
+            <div class="amount">${formatPLN(amountMinor)}</div>
+            <div class="row">
+              <div class="spinner" aria-hidden="true"></div>
+              <div>Przetwarzanie płatności...</div>
+            </div>
+            <div class="tiny">Proszę czekać</div>
+          `;
+          break;
+        }
+        case State.BLIK_ENTRY: {
+          const dots = blikCode.padEnd(6, '•').replace(/./g, (ch,i)=> i<blikCode.length ? (blikCode[i]) : '•');
+          content.innerHTML = `
+            <div class="caption">Płatność BLIK</div>
+            <div class="amount">${formatPLN(amountMinor || parseInt(amountEntry||'0',10))}</div>
+            <div class="field"><div class="label">Kod BLIK</div><div class="value"><span class="dots">${dots}</span></div></div>
+            <div class="hint">Wpisz 6-cyfrowy kod i naciśnij “OK”.</div>
+            <div class="tiny">Po zatwierdzeniu potwierdź w aplikacji banku.</div>
+          `;
+          break;
+        }
+        case State.BLIK_WAIT: {
+          content.innerHTML = `
+            <div class="caption">Płatność BLIK</div>
+            <div class="amount">${formatPLN(amountMinor)}</div>
+            <div class="row">
+              <div class="spinner"></div>
+              <div>Oczekiwanie na potwierdzenie w aplikacji banku...</div>
+            </div>
+            <div class="tiny">Masz 2 minuty na zatwierdzenie.</div>
+          `;
+          break;
+        }
+        case State.RESULT: {
+          content.innerHTML = `
+            <div class="amount">${formatPLN(amountMinor)}</div>
+            <div class="result ok">Płatność przyjęta</div>
+            <div class="hint">Dziękujemy! Naciśnij “Anuluj”, aby wrócić.</div>
+          `;
+          break;
+        }
+      }
+    }
+
+    function resetAll(){
+      clearTimer();
+      state = State.IDLE;
+      amountMinor = 0;
+      amountEntry = '';
+      blikCode = '';
+      render();
+    }
+
+    function clearTimer(){
+      if(timer) { clearTimeout(timer); timer = null; }
+    }
+
+    // Wejście cyfr
+    function pushDigit(d){
+      if(state === State.IDLE){
+        state = State.AMOUNT_ENTRY;
+      }
+      if(state === State.AMOUNT_ENTRY){
+        // budujemy kwotę w groszach jako string cyfr
+        const raw = (amountEntry + d).replace(/^0+/,''); // usuń wiodące zera
+        amountEntry = raw.slice(0, 9); // limit
+      } else if(state === State.BLIK_ENTRY){
+        if(blikCode.length < 6){
+          blikCode += d;
+        }
+      }
+      render();
+    }
+
+    function doClear(){
+      if(state === State.AMOUNT_ENTRY){
+        amountEntry = '';
+      } else if(state === State.BLIK_ENTRY){
+        blikCode = '';
+      } else {
+        // w innych stanach ignoruj
+      }
+      render();
+    }
+
+    function doCancel(){
+      resetAll();
+    }
+
+    function startCardFlow(){
+      // Ustal kwotę
+      amountMinor = parseInt(amountEntry || '0', 10);
+      if(!amountMinor){
+        // brak kwoty – nic nie rób
+        return;
+      }
+      state = State.READY_FOR_CARD;
+      render();
+    }
+
+    function screenTap(){
+      if(state !== State.READY_FOR_CARD) return;
+      // symulacja zbliżenia
+      state = State.CARD_PROCESSING;
+      render();
+      clearTimer();
+      timer = setTimeout(()=>{
+        state = State.RESULT;
+        render();
+      }, 1800);
+    }
+
+    function startBlikFlow(){
+      // Jeśli brak kwoty wpisanej – poproś o kwotę
+      if(state === State.IDLE && !amountEntry){
+        state = State.AMOUNT_ENTRY;
+        render();
+        return;
+      }
+      // Ustal kwotę
+      amountMinor = parseInt(amountEntry || '0', 10);
+      if(!amountMinor){
+        // Jeśli wprowadzona kwota to 0
+        return;
+      }
+      blikCode = '';
+      state = State.BLIK_ENTRY;
+      render();
+    }
+
+    function submit(){
+      if(state === State.AMOUNT_ENTRY){
+        startCardFlow();
+      } else if(state === State.BLIK_ENTRY){
+        if(blikCode.length !== 6){
+          // wymagane 6 cyfr
+          pulseError("Wpisz 6 cyfr kodu BLIK");
+          return;
+        }
+        state = State.BLIK_WAIT;
+        render();
+        clearTimer();
+        // Symulacja potwierdzenia w banku
+        timer = setTimeout(()=>{
+          state = State.RESULT;
+          render();
+        }, 2200);
+      }
+    }
+
+    function pulseError(msg){
+      // opcjonalnie: krótkie info błędu
+      const prev = content.innerHTML;
+      content.innerHTML = prev + `<div class="result err" style="margin-top:10px">${msg}</div>`;
+      setTimeout(()=> render(), 1200);
+    }
+
+    // Zdarzenia
+    screen.addEventListener('click', screenTap);
+    blikBtn.addEventListener('click', startBlikFlow);
+
+    keypad.addEventListener('click', (e)=>{
+      const key = e.target.closest('.key');
+      if(!key) return;
+      const digit = key.getAttribute('data-key');
+      const action = key.getAttribute('data-action');
+      if(digit){
+        pushDigit(digit);
+      } else if(action === 'cancel'){
+        doCancel();
+      } else if(action === 'clear'){
+        doClear();
+      } else if(action === 'ok'){
+        submit();
+      }
+    });
+
+    // Obsługa klawiatury fizycznej
+    window.addEventListener('keydown', (e)=>{
+      if(e.key >= '0' && e.key <= '9'){
+        pushDigit(e.key);
+      } else if(e.key === 'Enter'){
+        submit();
+      } else if(e.key === 'Escape'){
+        doCancel();
+      } else if(e.key === 'Backspace'){
+        if(state === State.AMOUNT_ENTRY){
+          amountEntry = amountEntry.slice(0,-1);
+          render();
+        } else if(state === State.BLIK_ENTRY){
+          blikCode = blikCode.slice(0,-1);
+          render();
+        }
+      } else if(e.key.toLowerCase() === 'b'){
+        startBlikFlow();
+      }
+    });
+
+    // Start
+    render();
+  </script>
+</body>
+</html>
