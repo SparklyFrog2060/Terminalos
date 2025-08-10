@@ -154,6 +154,10 @@
   </style>
 </head>
 <body>
+  <audio id="beepSound">
+  <source src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" type="audio/mpeg">
+</audio>
+
   <div class="terminal" role="application" aria-label="Symulator terminala płatniczego">
     <div class="bezel">
       <div id="screen" class="screen" aria-live="polite">
@@ -196,6 +200,64 @@
   </div>
 
   <script>
+
+    // Prosty generator "beep" 100% w JS
+let audioCtx;
+let currentBeep = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AC();
+  }
+  // W razie pauzy (polityki autoodtwarzania) spróbuj wznowić na gest
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+/**
+ * Odtwórz wysoki, pojedynczy dźwięk.
+ * durationSec – długość w sekundach (np. 1.5)
+ * freqHz – częstotliwość (np. 2200 = wysoki ton)
+ * type – 'sine' | 'square' | 'triangle' | 'sawtooth'
+ * volume – głośność 0..1 (np. 0.08)
+ */
+function playBeep(durationSec = 1.5, freqHz = 2200, type = 'sine', volume = 0.08) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+
+  // Jeśli poprzedni beep jeszcze gra—uprzejmie go wygaszamy
+  if (currentBeep && currentBeep.stop) {
+    try { currentBeep.stop(0); } catch(e){}
+  }
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freqHz, now);
+
+  // Delikatna obwiednia, żeby nie było "kliknięcia"
+  const attack = 0.01;     // szybkie wejście
+  const release = 0.05;    // krótkie wyjście
+  const sustainTime = Math.max(0, durationSec - attack - release);
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(volume, now + attack);
+  gain.gain.setValueAtTime(volume, now + attack + sustainTime);
+  gain.gain.linearRampToValueAtTime(0, now + attack + sustainTime + release);
+
+  osc.connect(gain).connect(ctx.destination);
+
+  osc.start(now);
+  osc.stop(now + attack + sustainTime + release);
+
+  // Zapamiętaj aktualny beep do ewentualnego przerwania
+  currentBeep = osc;
+}
+
     // Prosty zegar
     const timeEl = document.getElementById('time');
     const tick = () => {
@@ -319,7 +381,7 @@
         case State.RESULT: {
           content.innerHTML = `
             <div class="amount">${formatPLN(amountMinor)}</div>
-            <div class="result ok">Płatność przyjęta</div>
+            <div class="result ok">Transakcja zaakceptowana</div>
             <div class="hint">Dziękujemy! Naciśnij “Anuluj”, aby wrócić.</div>
           `;
           break;
@@ -370,6 +432,7 @@
 
     function doCancel(){
       resetAll();
+       playBeep(1.5, 2200, 'sine', 0.08);
     }
 
     function startCardFlow(){
@@ -383,17 +446,21 @@
       render();
     }
 
-    function screenTap(){
-      if(state !== State.READY_FOR_CARD) return;
-      // symulacja zbliżenia
-      state = State.CARD_PROCESSING;
-      render();
-      clearTimer();
-      timer = setTimeout(()=>{
-        state = State.RESULT;
-        render();
-      }, 1800);
-    }
+    function screenTap() {
+  if (state !== State.READY_FOR_CARD) return;
+
+  // Wysoki beep 1.5 s
+  playBeep(1.5, 2200, 'sine', 0.08);
+
+  state = State.CARD_PROCESSING;
+  render();
+  clearTimer();
+  timer = setTimeout(() => {
+    state = State.RESULT;
+    render();
+  }, 1800);
+}
+
 
     function startBlikFlow(){
       // Jeśli brak kwoty wpisanej – poproś o kwotę
