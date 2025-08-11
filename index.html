@@ -2,554 +2,463 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Symulator terminala płatniczego – Karta i BLIK</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Terminal płatniczy — symulacja</title>
   <style>
-    :root{
-      --terminal-bg:#1a1f28;
-      --terminal-edge:#0f131a;
-      --screen-bg:#0b0f14;
-      --screen-glow:#19b5fe33;
-      --text:#e8eef6;
-      --muted:#9fb0c4;
-      --accent:#19b5fe;
-      --ok:#18c37e;
-      --warn:#ffcc33;
-      --err:#ff4757;
-      --key:#232a36;
-      --key-hover:#2b3443;
-      --side:#202633;
+    :root {
+      --bg: #0f1115;
+      --panel: #141824;
+      --accent: #2dd4bf;
+      --accent-2: #60a5fa;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --btn: #1f2937;
+      --btn-hover: #263244;
+      --screen: #0b0f18;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      display:grid;
-      place-items:center;
-      background:radial-gradient(1000px 600px at 70% 20%, #10141b, #07090c);
-      color:var(--text);
-      font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans";
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      -webkit-font-smoothing: antialiased; line-height: 1.35;
     }
-    .terminal{
-      position:relative;
-      width: 380px;
-      background:linear-gradient(180deg, var(--terminal-bg), var(--terminal-edge));
-      border-radius:24px;
-      padding:18px 12px 14px;
-      box-shadow: 0 30px 80px #0009, inset 0 1px 0 #ffffff15, inset 0 -6px 12px #0008;
+    .wrap {
+      min-height: 100dvh; display: grid; place-items: center; padding: 12px;
     }
-    .bezel{
-      border-radius:18px;
-      padding:12px;
-      background:linear-gradient(180deg, #0e131b, #0a0e14);
-      box-shadow: inset 0 0 0 1px #ffffff10, inset 0 0 0 2px #00000080;
+    .terminal {
+      width: min(480px, 100%); background: var(--panel); border-radius: 18px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.4); overflow: hidden; border: 1px solid #1f2333;
     }
-    .screen{
-      position:relative;
-      height: 220px;
-      background:
-        radial-gradient(400px 140px at 50% 0%, #1f2a3a44 0 50%, transparent 60%),
-        var(--screen-bg);
-      border-radius:14px;
-      box-shadow:
-        inset 0 0 0 1px #ffffff12,
-        inset 0 0 0 2px #00000090,
-        0 0 40px var(--screen-glow);
-      padding:14px 16px;
-      overflow:hidden;
-      cursor:default;
-      user-select:none;
+    .topbar {
+      display:flex; justify-content: space-between; align-items: center; padding: 10px 14px;
+      background: #0b0e16; border-bottom: 1px solid #1f2333; font-size: 13px; color: var(--muted);
     }
-    .screen.clickable{ cursor: pointer; box-shadow: inset 0 0 0 1px #ffffff1a, 0 0 0 2px #19b5fe44, 0 0 28px #19b5fe33; }
-    .statusbar{
-      display:flex; align-items:center; justify-content:space-between;
-      font-size:12px; color:var(--muted); opacity:.95; letter-spacing:.2px;
-      margin-bottom:6px;
+    .screen {
+      background: linear-gradient(180deg, #0b0f18, #0b0f18 60%, #0a101c); color: #dbeafe;
+      padding: 14px; min-height: 135px; display:flex; flex-direction: column; gap: 8px; justify-content: center;
     }
-    .merchant{ font-weight:600; color:#cfe3ff; }
-    .time{ font-variant-numeric:tabular-nums; }
-    .content{
-      height: 160px;
-      display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px;
-      text-align:center;
+    .amount {
+      font-variant-numeric: tabular-nums; font-weight: 700; font-size: 36px; letter-spacing: .5px;
     }
-    .amount{
-      font-size:28px; font-weight:700; letter-spacing:.5px;
+    .status { color: var(--muted); font-size: 14px; min-height: 20px; }
+    .hint { font-size: 12px; color: #8aa2c9; }
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px;
     }
-    .hint{ color:#b7c6da; font-size:14px; }
-    .nfc{
-      width:64px; height:48px; opacity:.9;
-      filter: drop-shadow(0 6px 10px #0007);
+    .btn {
+      background: var(--btn); color: var(--text); border: 1px solid #1f2333;
+      border-radius: 12px; padding: 14px; font-size: 18px; font-weight: 600;
+      display:flex; align-items:center; justify-content:center;
+      transition: background .15s ease, transform .05s ease;
+      user-select: none; -webkit-tap-highlight-color: transparent;
     }
-    .row{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;}
-    .badge{
-      font-size:12px; padding:4px 8px; border-radius:999px; background:#1a2433; color:#bcd0ea;
-      border:1px solid #314158;
+    .btn:active { transform: translateY(1px); }
+    .btn:hover { background: var(--btn-hover); }
+    .btn.func { font-size: 15px; font-weight: 700; }
+    .funcs {
+      display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px 12px;
     }
-    .spinner{
-      width:22px; height:22px; border:3px solid #2b3a51; border-top-color:var(--accent);
-      border-radius:50%; animation:spin 1s linear infinite; margin-top:2px;
+    .btn.primary { background: #123; border-color: #254; color: #d1fae5; }
+    .btn.primary:hover { background: #0e2b3a; }
+    .btn.accent { background: #0e2230; border-color: #1f3b4f; color: #c7f9ff; }
+    .btn.ok { background: #0f2a1d; border-color: #1e5c3e; color: #bbf7d0; }
+    .btn.warn { background: #2d210a; border-color: #5a420f; color: #fed7aa; }
+    .btn.danger { background: #2b0f12; border-color: #5b1f25; color: #fecaca; }
+    .footer {
+      padding: 10px 12px; font-size: 12px; color: var(--muted); display:flex; justify-content: space-between; gap: 8px;
+      border-top: 1px solid #1f2333;
     }
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .result{
-      font-size:18px; font-weight:600; padding:8px 12px; border-radius:10px; margin-top:6px;
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.72);
+      display:none; align-items: center; justify-content: center; z-index: 50;
+      backdrop-filter: blur(2px);
     }
-    .ok{ color:#eafff5; background:#0d2a20; border:1px solid #1c6f4e;}
-    .err{ color:#ffecec; background:#2a0d0d; border:1px solid #7f2b2b;}
-
-    .layout{
-      margin-top:12px;
-      display:grid; grid-template-columns: 1fr auto; gap:10px;
+    .modal {
+      width: min(520px, 96vw); background: #0b0f18; border: 1px solid #1f2333; border-radius: 14px; overflow: hidden;
     }
-    .keypad{
-      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;
+    .modal .head { display:flex; justify-content: space-between; align-items:center; padding: 10px 12px; background: #0a0d16; color: #9fb3d6; font-size: 13px; }
+    .modal .body { padding: 12px; display:grid; gap: 10px; }
+    .videoWrap {
+      position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #1f2333; background: #000;
+      aspect-ratio: 16/10; display:grid; place-items:center;
     }
-    .key{
-      height:52px; border-radius:12px; background:var(--key); color:var(--text);
-      display:grid; place-items:center; font-weight:700; font-size:18px;
-      box-shadow: inset 0 -3px 0 #0006, 0 2px 0 #0008;
-      user-select:none; cursor:pointer;
-      transition: transform .03s ease, background .15s ease;
+    video { width: 100%; height: 100%; object-fit: cover; }
+    canvas { display:none; }
+    .badge {
+      display:inline-flex; align-items:center; gap: 6px; font-size: 12px; padding: 6px 8px; border-radius: 999px;
+      background: #0f172a; border: 1px solid #1f2333; color: #cbd5e1;
     }
-    .key:active{ transform: translateY(1px); }
-    .key:hover{ background:var(--key-hover); }
-    .key.fn{ font-size:14px; }
-    .key.red{ background: linear-gradient(#6b2226, #4a1619); border:1px solid #cc4b58; }
-    .key.yellow{ background: linear-gradient(#6b5a22, #4a3f16); border:1px solid #e0b34a; }
-    .key.green{ background: linear-gradient(#226b42, #164a2e); border:1px solid #49cc8a; }
-    .side{
-      display:flex; flex-direction:column; gap:10px; padding-left:4px;
+    .row { display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
+    .progress {
+      height: 8px; border-radius: 999px; background: #0f172a; border: 1px solid #1f2333; overflow:hidden;
     }
-    .side .skey{
-      width:64px; height:42px; border-radius:10px; background:var(--side); color:#cfe3ff;
-      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;
-      border:1px solid #2e3a4f; box-shadow: inset 0 -3px 0 #0006;
-      cursor:pointer; user-select:none;
-    }
-    .skey:active{ transform: translateY(1px); }
-    .skey.blik{ background: linear-gradient(180deg, #1c304a, #152538); border-color:#315a8d; color:#eaf4ff; }
-    .softline{
-      margin-top:6px; font-size:12px; color:#9fb0c4; text-align:center;
-    }
-    .field{
-      display:flex; align-items:center; gap:8px; background:#0f1620; border:1px solid #2a394f; border-radius:10px; padding:10px 12px;
-      min-width: 230px; justify-content:center;
-      font-variant-numeric: tabular-nums;
-    }
-    .field .label{ color:#9fb0c4; font-size:12px; text-transform:uppercase; letter-spacing:.7px;}
-    .field .value{ font-size:20px; font-weight:700; letter-spacing:1px; }
-    .dots{
-      display:inline-block; letter-spacing:2px; min-width: 86px;
-    }
-    .caption{ font-size:12px; color:#8ea5c5;}
-    .tiny{ font-size:11px; color:#7f93ac;}
-    .contactless-symbol{
-      width:64px; height:48px;
-    }
-    .cards-row svg{ height:16px; width:auto; opacity:.9; }
-    .brand{
-      position:absolute; left:12px; bottom:10px; font-size:11px; color:#7890ac;
-      letter-spacing:.5px;
-    }
+    .progress > span { display:block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s ease; }
+    .code { font-variant-numeric: tabular-nums; letter-spacing: 2px; font-weight: 800; }
+    .muted { color: var(--muted); }
+    .sr { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   </style>
+  <!-- QR decoder -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
-  <audio id="beepSound">
-  <source src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" type="audio/mpeg">
-</audio>
+  <div class="wrap">
+    <div class="terminal" role="application" aria-label="Symulacja terminala płatniczego">
+      <div class="topbar">
+        <span>Symulacja terminala</span>
+        <span id="conn" class="badge">Online</span>
+      </div>
 
-  <div class="terminal" role="application" aria-label="Symulator terminala płatniczego">
-    <div class="bezel">
-      <div id="screen" class="screen" aria-live="polite">
-        <div class="statusbar">
-          <div class="merchant">Sklep Demo • TID 12345678</div>
-          <div class="time" id="time">--:--</div>
-        </div>
-        <div class="content" id="content">
-          <!-- Dynamicznie wypełniane -->
-        </div>
-        <div class="brand">v1.0 • PLN</div>
+      <div class="screen" id="screen">
+        <div class="amount" id="amount">0,00 zł</div>
+        <div class="status" id="status">Wprowadź kwotę i wybierz metodę płatności.</div>
+        <div class="hint" id="hint">Dostępne: Karta (zbliż), BLIK (6 cyfr), Oszołom (QR).</div>
+      </div>
+
+      <div class="grid" aria-label="Klawiatura numeryczna">
+        <button class="btn" data-key="1">1</button>
+        <button class="btn" data-key="2">2</button>
+        <button class="btn" data-key="3">3</button>
+        <button class="btn" data-key="4">4</button>
+        <button class="btn" data-key="5">5</button>
+        <button class="btn" data-key="6">6</button>
+        <button class="btn" data-key="7">7</button>
+        <button class="btn" data-key="8">8</button>
+        <button class="btn" data-key="9">9</button>
+        <button class="btn warn" id="clear">C</button>
+        <button class="btn" data-key="0">0</button>
+        <button class="btn" id="back">←</button>
+      </div>
+
+      <div class="funcs" aria-label="Przyciski funkcyjne">
+        <button class="btn func accent" id="blikBtn">BLIK</button>
+        <button class="btn func ok" id="cardBtn">Karta</button>
+        <button class="btn func primary" id="qrBtn">Oszołom (QR)</button>
+      </div>
+
+      <div class="footer">
+        <span>To tylko symulacja — nic nie jest naprawdę przetwarzane.</span>
+        <button class="btn danger" style="padding:6px 10px;font-size:13px;border-radius:8px" id="cancel">Anuluj</button>
       </div>
     </div>
+  </div>
 
-    <div class="layout">
-      <div class="keypad" aria-label="Klawiatura terminala">
-        <div class="key" data-key="1">1</div>
-        <div class="key" data-key="2">2</div>
-        <div class="key" data-key="3">3</div>
-        <div class="key" data-key="4">4</div>
-        <div class="key" data-key="5">5</div>
-        <div class="key" data-key="6">6</div>
-        <div class="key" data-key="7">7</div>
-        <div class="key" data-key="8">8</div>
-        <div class="key" data-key="9">9</div>
-        <div class="key red fn" data-action="cancel">Anuluj</div>
-        <div class="key" data-key="0">0</div>
-        <div class="key yellow fn" data-action="clear">Wyczyść</div>
-        <div class="key green fn" style="grid-column:1 / span 3" data-action="ok">OK</div>
+  <!-- Modal: Kamera / Karta / QR -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="head">
+        <div class="row">
+          <span id="modalTitle">Kamera</span>
+          <span class="badge" id="modeBadge">Tryb</span>
+        </div>
+        <button class="btn danger" style="padding:6px 10px;font-size:13px;border-radius:8px" id="closeModal">Zamknij</button>
       </div>
-
-      <div class="side" aria-label="Przyciski funkcyjne">
-        <div class="skey blik" id="blikBtn" title="Płatność BLIK">BLIK</div>
-        <div class="skey" title="F2">F2</div>
-        <div class="skey" title="F3">F3</div>
+      <div class="body">
+        <div class="videoWrap">
+          <video id="video" playsinline autoplay muted></video>
+          <canvas id="canvas"></canvas>
+        </div>
+        <div class="row">
+          <span class="badge" id="infoBadge">Przygotowywanie...</span>
+          <span class="badge" id="brightnessBadge">Jasność: —</span>
+          <span class="badge" id="progressBadge">Postęp: 0%</span>
+        </div>
+        <div class="progress" aria-label="Postęp wykrycia">
+          <span id="progressBar"></span>
+        </div>
+        <div class="muted" id="modalHint">Udziel dostępu do kamery.</div>
       </div>
     </div>
+  </div>
 
-    <div class="softline">Wskazówka: przy poleceniu “Przyłóż kartę” kliknij w ekran, aby zasymulować zbliżenie.</div>
+  <!-- Modal: BLIK -->
+  <div class="overlay" id="blikOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="blikTitle">
+      <div class="head">
+        <span id="blikTitle">Płatność BLIK</span>
+        <button class="btn danger" style="padding:6px 10px;font-size:13px;border-radius:8px" id="closeBlik">Zamknij</button>
+      </div>
+      <div class="body">
+        <div>
+          <div>Kwota: <strong id="blikAmount">0,00 zł</strong></div>
+          <div>Kod BLIK: <span class="code" id="blikCode">——— ——</span></div>
+        </div>
+        <div class="grid" id="blikPad">
+          <button class="btn" data-b="1">1</button><button class="btn" data-b="2">2</button><button class="btn" data-b="3">3</button>
+          <button class="btn" data-b="4">4</button><button class="btn" data-b="5">5</button><button class="btn" data-b="6">6</button>
+          <button class="btn" data-b="7">7</button><button class="btn" data-b="8">8</button><button class="btn" data-b="9">9</button>
+          <button class="btn warn" id="blikClear">C</button><button class="btn" data-b="0">0</button>
+          <button class="btn ok" id="blikAccept">OK</button>
+        </div>
+        <div class="muted" id="blikHint">Wpisz 6 cyfr i naciśnij OK.</div>
+      </div>
+    </div>
   </div>
 
   <script>
+    // ------------------------
+    // Prosta logika terminala
+    // ------------------------
+    const amountEl = document.getElementById('amount');
+    const statusEl = document.getElementById('status');
+    const hintEl   = document.getElementById('hint');
+    const keypad   = document.querySelectorAll('.grid .btn[data-key]');
+    const clearBtn = document.getElementById('clear');
+    const backBtn  = document.getElementById('back');
+    const cardBtn  = document.getElementById('cardBtn');
+    const blikBtn  = document.getElementById('blikBtn');
+    const qrBtn    = document.getElementById('qrBtn');
+    const cancel   = document.getElementById('cancel');
 
-    // Prosty generator "beep" 100% w JS
-let audioCtx;
-let currentBeep = null;
+    let cents = 0; // kwota w groszach
 
-function getAudioCtx() {
-  if (!audioCtx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AC();
-  }
-  // W razie pauzy (polityki autoodtwarzania) spróbuj wznowić na gest
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  return audioCtx;
-}
+    function fmtAmount(c) {
+      const z = (c/100).toFixed(2).replace('.', ',');
+      return `${z} zł`;
+    }
+    function updateAmount() {
+      amountEl.textContent = fmtAmount(cents);
+      statusEl.textContent = 'Wybierz metodę płatności.';
+    }
+    keypad.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.key;
+        // wprowadzamy jak w terminalu: cyfra dopisuje grosze z przesunięciem
+        cents = Math.min(99999999, Math.max(0, cents*10 + Number(d)));
+        updateAmount();
+      });
+    });
+    clearBtn.onclick = () => { cents = 0; updateAmount(); };
+    backBtn.onclick  = () => { cents = Math.floor(cents/10); updateAmount(); };
 
-/**
- * Odtwórz wysoki, pojedynczy dźwięk.
- * durationSec – długość w sekundach (np. 1.5)
- * freqHz – częstotliwość (np. 2200 = wysoki ton)
- * type – 'sine' | 'square' | 'triangle' | 'sawtooth'
- * volume – głośność 0..1 (np. 0.08)
- */
-function playBeep(durationSec = 1.0, freqHz = 3200, type = 'sine', volume = 0.08) {
-  const ctx = getAudioCtx();
-  const now = ctx.currentTime;
-
-  // Jeśli poprzedni beep jeszcze gra—uprzejmie go wygaszamy
-  if (currentBeep && currentBeep.stop) {
-    try { currentBeep.stop(0); } catch(e){}
-  }
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = type;
-  osc.frequency.setValueAtTime(freqHz, now);
-
-  // Delikatna obwiednia, żeby nie było "kliknięcia"
-  const attack = 0.01;     // szybkie wejście
-  const release = 0.05;    // krótkie wyjście
-  const sustainTime = Math.max(0, durationSec - attack - release);
-
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(volume, now + attack);
-  gain.gain.setValueAtTime(volume, now + attack + sustainTime);
-  gain.gain.linearRampToValueAtTime(0, now + attack + sustainTime + release);
-
-  osc.connect(gain).connect(ctx.destination);
-
-  osc.start(now);
-  osc.stop(now + attack + sustainTime + release);
-
-  // Zapamiętaj aktualny beep do ewentualnego przerwania
-  currentBeep = osc;
-}
-
-    // Prosty zegar
-    const timeEl = document.getElementById('time');
-    const tick = () => {
-      const d = new Date();
-      const hh = String(d.getHours()).padStart(2,'0');
-      const mm = String(d.getMinutes()).padStart(2,'0');
-      timeEl.textContent = hh + ':' + mm;
-    };
-    tick(); setInterval(tick, 30_000);
-
-    // Stan aplikacji
-    const screen = document.getElementById('screen');
-    const content = document.getElementById('content');
-    const blikBtn = document.getElementById('blikBtn');
-    const keypad = document.querySelector('.keypad');
-
-    const State = {
-      IDLE: 'idle',
-      AMOUNT_ENTRY: 'amount_entry',
-      READY_FOR_CARD: 'ready_for_card',
-      CARD_PROCESSING: 'card_processing',
-      BLIK_ENTRY: 'blik_entry',
-      BLIK_WAIT: 'blik_wait',
-      RESULT: 'result'
+    cancel.onclick = () => {
+      cents = 0; updateAmount();
+      statusEl.textContent = 'Anulowano. Wprowadź kwotę ponownie.';
+      stopCamera();
+      hideOverlays();
     };
 
-    let state = State.IDLE;
-    let amountMinor = 0;          // grosze (np. 1234 = 12,34 PLN)
-    let amountEntry = '';         // do wprowadzania kwoty
-    let blikCode = '';            // 6 cyfr
-    let timer = null;
+    // ------------------------
+    // BLIK modal
+    // ------------------------
+    const blikOverlay = document.getElementById('blikOverlay');
+    const blikAmount  = document.getElementById('blikAmount');
+    const blikCodeEl  = document.getElementById('blikCode');
+    const blikPad     = document.getElementById('blikPad');
+    const blikClear   = document.getElementById('blikClear');
+    const blikAccept  = document.getElementById('blikAccept');
+    const closeBlik   = document.getElementById('closeBlik');
+    const blikHint    = document.getElementById('blikHint');
 
-    function formatPLN(minor){
-      const isNeg = minor < 0;
-      const abs = Math.abs(minor);
-      const zloty = Math.floor(abs / 100);
-      const grosze = String(abs % 100).padStart(2,'0');
-      return (isNeg ? '-' : '') + zloty.toLocaleString('pl-PL') + ',' + grosze + ' PLN';
+    let blikCode = "";
+
+    function showBlik() {
+      blikAmount.textContent = fmtAmount(cents);
+      blikCode = "";
+      drawBlikCode();
+      blikHint.textContent = 'Wpisz 6 cyfr i naciśnij OK.';
+      blikOverlay.style.display = 'flex';
+      blikOverlay.setAttribute('aria-hidden', 'false');
     }
-
-    function render(){
-      screen.classList.remove('clickable');
-      switch(state){
-        case State.IDLE: {
-          content.innerHTML = `
-            <div class="caption">Terminal gotowy</div>
-            <div class="field" aria-live="polite">
-              <div class="label">Kwota</div>
-              <div class="value">${amountEntry
-                ? formatPLN(parseInt(amountEntry || '0',10))
-                : '0,00 PLN'}</div>
-            </div>
-            <div class="hint">Wpisz kwotę i naciśnij zielony “OK”<br/>lub naciśnij przycisk po prawej, by wybrać <b>BLIK</b>.</div>
-            <div class="row cards-row">
-              <span class="badge">Karta</span>
-              <span class="badge">Zbliżeniowo</span>
-              <span class="badge">BLIK</span>
-            </div>
-          `;
-          break;
-        }
-        case State.AMOUNT_ENTRY: {
-          content.innerHTML = `
-            <div class="caption">Wprowadzanie kwoty</div>
-            <div class="field">
-              <div class="label">Kwota</div>
-              <div class="value">${formatPLN(parseInt(amountEntry||'0',10))}</div>
-            </div>
-            <div class="hint">Naciśnij “OK”, aby przejść do płatności kartą.</div>
-          `;
-          break;
-        }
-        case State.READY_FOR_CARD: {
-          screen.classList.add('clickable');
-          content.innerHTML = `
-            <div class="amount">${formatPLN(amountMinor)}</div>
-            <svg class="contactless-symbol" viewBox="0 0 64 48" aria-hidden="true">
-              <path fill="#19b5fe" d="M21 24c0-5.2 2.2-9.9 5.6-13.2l2.2 2.2C26 16 24 19.8 24 24s2 8 4.8 11l-2.2 2.2C23.2 33.9 21 29.2 21 24z"/>
-              <path fill="#19b5fe" d="M31 24c0-6.9 3-13.1 7.7-17.3l2.2 2.2C37 12.7 35 18.1 35 24c0 5.9 2 11.3 5.9 15.1l-2.2 2.2C34 37.1 31 30.9 31 24z"/>
-              <path fill="#19b5fe" d="M41 24c0-8.4 3.7-16 9.6-21.2l2.2 2.2C48 9.7 45 16.5 45 24s3 14.3 7.8 19l-2.2 2.2C44.7 40 41 32.4 41 24z"/>
-            </svg>
-            <div class="hint"><b>Przyłóż kartę</b> do czytnika (kliknij w ekran)</div>
-            <div class="tiny">Możesz też włożyć/przeciągnąć kartę – tutaj symulujemy zbliżenie kliknięciem.</div>
-          `;
-          break;
-        }
-        case State.CARD_PROCESSING: {
-          content.innerHTML = `
-            <div class="amount">${formatPLN(amountMinor)}</div>
-            <div class="row">
-              <div class="spinner" aria-hidden="true"></div>
-              <div>Przetwarzanie płatności...</div>
-            </div>
-            <div class="tiny">Proszę czekać</div>
-          `;
-          break;
-        }
-        case State.BLIK_ENTRY: {
-          const dots = blikCode.padEnd(6, '•').replace(/./g, (ch,i)=> i<blikCode.length ? (blikCode[i]) : '•');
-          content.innerHTML = `
-            <div class="caption">Płatność BLIK</div>
-            <div class="amount">${formatPLN(amountMinor || parseInt(amountEntry||'0',10))}</div>
-            <div class="field"><div class="label">Kod BLIK</div><div class="value"><span class="dots">${dots}</span></div></div>
-            <div class="hint">Wpisz 6-cyfrowy kod i naciśnij “OK”.</div>
-            <div class="tiny">Po zatwierdzeniu potwierdź w aplikacji banku.</div>
-          `;
-          break;
-        }
-        case State.BLIK_WAIT: {
-          content.innerHTML = `
-            <div class="caption">Płatność BLIK</div>
-            <div class="amount">${formatPLN(amountMinor)}</div>
-            <div class="row">
-              <div class="spinner"></div>
-              <div>Oczekiwanie na potwierdzenie w aplikacji banku...</div>
-            </div>
-            <div class="tiny">Masz 2 minuty na zatwierdzenie.</div>
-          `;
-          break;
-        }
-        case State.RESULT: {
-          content.innerHTML = `
-            <div class="amount">${formatPLN(amountMinor)}</div>
-            <div class="result ok">Transakcja zaakceptowana</div>
-            <div class="hint">Dziękujemy! Naciśnij “Anuluj”, aby wrócić.</div>
-          `;
-          break;
-        }
+    function hideBlik() {
+      blikOverlay.style.display = 'none';
+      blikOverlay.setAttribute('aria-hidden', 'true');
+    }
+    function drawBlikCode() {
+      const view = (blikCode.padEnd(6, '—').slice(0,3) + ' ' + blikCode.padEnd(6, '—').slice(3,6))
+      blikCodeEl.textContent = view;
+    }
+    blikPad.addEventListener('click', (e) => {
+      const v = e.target.dataset?.b;
+      if (!v) return;
+      if (blikCode.length < 6) {
+        blikCode += v;
+        drawBlikCode();
       }
-    }
-
-    function resetAll(){
-      clearTimer();
-      state = State.IDLE;
-      amountMinor = 0;
-      amountEntry = '';
-      blikCode = '';
-      render();
-    }
-
-    function clearTimer(){
-      if(timer) { clearTimeout(timer); timer = null; }
-    }
-
-    // Wejście cyfr
-    function pushDigit(d){
-      if(state === State.IDLE){
-        state = State.AMOUNT_ENTRY;
-      }
-      if(state === State.AMOUNT_ENTRY){
-        // budujemy kwotę w groszach jako string cyfr
-        const raw = (amountEntry + d).replace(/^0+/,''); // usuń wiodące zera
-        amountEntry = raw.slice(0, 9); // limit
-      } else if(state === State.BLIK_ENTRY){
-        if(blikCode.length < 6){
-          blikCode += d;
-        }
-      }
-      render();
-    }
-
-    function doClear(){
-      if(state === State.AMOUNT_ENTRY){
-        amountEntry = '';
-      } else if(state === State.BLIK_ENTRY){
-        blikCode = '';
-      } else {
-        // w innych stanach ignoruj
-      }
-      render();
-    }
-
-    function doCancel(){
-      resetAll();
-       playBeep(0.6, 3600, 'sine', 0.08);
-    }
-
-    function startCardFlow(){
-      // Ustal kwotę
-      amountMinor = parseInt(amountEntry || '0', 10);
-      if(!amountMinor){
-        // brak kwoty – nic nie rób
+    });
+    blikClear.onclick = () => { blikCode = ""; drawBlikCode(); };
+    blikAccept.onclick = () => {
+      if (blikCode.length !== 6) {
+        blikHint.textContent = 'Kod musi mieć 6 cyfr.';
         return;
       }
-      state = State.READY_FOR_CARD;
-      render();
+      blikHint.textContent = 'Wysyłanie prośby o potwierdzenie w aplikacji...';
+      blikAccept.disabled = true;
+      setTimeout(() => {
+        blikHint.textContent = 'Oczekiwanie na potwierdzenie banku...';
+        setTimeout(() => {
+          blikHint.textContent = 'Płatność zaakceptowana ✅';
+          statusEl.textContent = `BLIK: płatność ${fmtAmount(cents)} zakończona powodzeniem.`;
+          setTimeout(() => { hideBlik(); }, 1200);
+        }, 1400);
+      }, 900);
+    };
+    closeBlik.onclick = hideBlik;
+    blikBtn.onclick = () => {
+      if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz BLIK.'; return; }
+      showBlik();
+    };
+
+    // ------------------------
+    // Kamera / Karta / QR
+    // ------------------------
+    const overlay      = document.getElementById('overlay');
+    const closeModal   = document.getElementById('closeModal');
+    const video        = document.getElementById('video');
+    const canvas       = document.getElementById('canvas');
+    const modeBadge    = document.getElementById('modeBadge');
+    const infoBadge    = document.getElementById('infoBadge');
+    const brightBadge  = document.getElementById('brightnessBadge');
+    const progressBadge= document.getElementById('progressBadge');
+    const progressBar  = document.getElementById('progressBar');
+    const modalHint    = document.getElementById('modalHint');
+
+    let stream = null;
+    let rafId = null;
+    let mode = null; // 'card' | 'qr'
+    let darkScore = 0;
+
+    // Tolerancja ciemności (wybaczająca, ale nie za duża)
+    const DARK_THRESHOLD = 50; // 0-255: przeciętna jasność; <50 uznajemy za "ciemno"
+    const REQUIRED_DARK_FRAMES = 10; // kolejne "ciemne" próbki (ok. ~1 s)
+
+    function showOverlay(m) {
+      mode = m;
+      overlay.style.display = 'flex';
+      overlay.setAttribute('aria-hidden', 'false');
+      modeBadge.textContent = (m === 'card') ? 'Tryb: Karta (zbliżeniowa)' : 'Tryb: Oszołom (QR)';
+      infoBadge.textContent = 'Uruchamianie kamery...';
+      brightBadge.textContent = 'Jasność: —';
+      progressBadge.textContent= 'Postęp: 0%';
+      progressBar.style.width = '0%';
+      modalHint.textContent = (m === 'card')
+        ? 'Zasłoń obiektyw kartą/telefonem — wykryjemy przyłożenie.'
+        : 'Skieruj kamerę na dowolny kod QR.';
+      startCamera();
+    }
+    function hideOverlay() {
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    function hideOverlays() {
+      hideOverlay(); hideBlik();
     }
 
-    function screenTap() {
-  if (state !== State.READY_FOR_CARD) return;
-
-  // Wysoki beep 1.5 s
-  playBeep(0.6, 3600, 'sine', 0.08);
-
-  state = State.CARD_PROCESSING;
-  render();
-  clearTimer();
-  timer = setTimeout(() => {
-    state = State.RESULT;
-    render();
-  }, 1800);
-}
-
-
-    function startBlikFlow(){
-      // Jeśli brak kwoty wpisanej – poproś o kwotę
-      if(state === State.IDLE && !amountEntry){
-        state = State.AMOUNT_ENTRY;
-        render();
-        return;
+    async function startCamera() {
+      stopCamera();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+        canvas.width = video.videoWidth || 640;
+        canvas.height= video.videoHeight || 360;
+        darkScore = 0;
+        infoBadge.textContent = 'Kamera gotowa';
+        loop();
+      } catch (e) {
+        infoBadge.textContent = 'Brak dostępu do kamery';
+        modalHint.textContent = 'Zezwól na aparat i otwórz przez HTTPS.';
       }
-      // Ustal kwotę
-      amountMinor = parseInt(amountEntry || '0', 10);
-      if(!amountMinor){
-        // Jeśli wprowadzona kwota to 0
-        return;
+    }
+    function stopCamera() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
       }
-      blikCode = '';
-      state = State.BLIK_ENTRY;
-      render();
+    }
+    function avgBrightness(ctx, w, h) {
+      // Szybkie próbkowanie co 4 piksele
+      const step = 4;
+      const img = ctx.getImageData(0, 0, w, h).data;
+      let sum = 0, count = 0;
+      for (let y=0; y<h; y+=step) {
+        for (let x=0; x<w; x+=step) {
+          const i = (y*w + x) * 4;
+          const r = img[i], g = img[i+1], b = img[i+2];
+          // luminancja percepcyjna
+          const Y = 0.2126*r + 0.7152*g + 0.0722*b;
+          sum += Y; count++;
+        }
+      }
+      return sum / count;
+    }
+    function setProgress(p) {
+      const pct = Math.max(0, Math.min(100, Math.round(p*100)));
+      progressBar.style.width = pct + '%';
+      progressBadge.textContent = 'Postęp: ' + pct + '%';
     }
 
-    function submit(){
-      if(state === State.AMOUNT_ENTRY){
-        startCardFlow();
-      } else if(state === State.BLIK_ENTRY){
-        if(blikCode.length !== 6){
-          // wymagane 6 cyfr
-          pulseError("Wpisz 6 cyfr kodu BLIK");
+    function loop() {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.drawImage(video, 0, 0, w, h);
+
+      if (mode === 'card') {
+        // detekcja ciemności
+        const b = avgBrightness(ctx, w, h);
+        brightBadge.textContent = 'Jasność: ' + Math.round(b);
+        if (b < DARK_THRESHOLD) {
+          darkScore = Math.min(REQUIRED_DARK_FRAMES, darkScore + 1);
+        } else {
+          // lekka histereza: zmniejszaj powoli
+          darkScore = Math.max(0, darkScore - 1);
+        }
+        setProgress(darkScore / REQUIRED_DARK_FRAMES);
+
+        if (darkScore >= REQUIRED_DARK_FRAMES) {
+          infoBadge.textContent = 'Wykryto przyłożenie karty ✅';
+          statusEl.textContent = `Karta: płatność ${fmtAmount(cents)} zaakceptowana.`;
+          setTimeout(() => { hideOverlay(); stopCamera(); }, 400);
           return;
         }
-        state = State.BLIK_WAIT;
-        render();
-        clearTimer();
-        // Symulacja potwierdzenia w banku
-        timer = setTimeout(()=>{
-          state = State.RESULT;
-          render();
-        }, 2200);
-      }
-    }
-
-    function pulseError(msg){
-      // opcjonalnie: krótkie info błędu
-      const prev = content.innerHTML;
-      content.innerHTML = prev + `<div class="result err" style="margin-top:10px">${msg}</div>`;
-      setTimeout(()=> render(), 1200);
-    }
-
-    // Zdarzenia
-    screen.addEventListener('click', screenTap);
-    blikBtn.addEventListener('click', startBlikFlow);
-
-    keypad.addEventListener('click', (e)=>{
-      const key = e.target.closest('.key');
-      if(!key) return;
-      const digit = key.getAttribute('data-key');
-      const action = key.getAttribute('data-action');
-      if(digit){
-        pushDigit(digit);
-      } else if(action === 'cancel'){
-        doCancel();
-      } else if(action === 'clear'){
-        doClear();
-      } else if(action === 'ok'){
-        submit();
-      }
-    });
-
-    // Obsługa klawiatury fizycznej
-    window.addEventListener('keydown', (e)=>{
-      if(e.key >= '0' && e.key <= '9'){
-        pushDigit(e.key);
-      } else if(e.key === 'Enter'){
-        submit();
-      } else if(e.key === 'Escape'){
-        doCancel();
-      } else if(e.key === 'Backspace'){
-        if(state === State.AMOUNT_ENTRY){
-          amountEntry = amountEntry.slice(0,-1);
-          render();
-        } else if(state === State.BLIK_ENTRY){
-          blikCode = blikCode.slice(0,-1);
-          render();
+      } else if (mode === 'qr') {
+        // skan QR
+        const img = ctx.getImageData(0, 0, w, h);
+        const code = jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' });
+        if (code) {
+          infoBadge.textContent = 'QR wykryty ✅';
+          statusEl.textContent = `Oszołom: przyjęto kod: ${code.data.substring(0,80)}${code.data.length>80?'…':''}`;
+          setProgress(1);
+          setTimeout(() => { hideOverlay(); stopCamera(); }, 400);
+          return;
+        } else {
+          infoBadge.textContent = 'Skanowanie...';
         }
-      } else if(e.key.toLowerCase() === 'b'){
-        startBlikFlow();
       }
+
+      rafId = requestAnimationFrame(loop);
+    }
+
+    closeModal.onclick = () => { hideOverlay(); stopCamera(); };
+
+    cardBtn.onclick = () => {
+      if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz Kartę.'; return; }
+      showOverlay('card');
+    };
+    qrBtn.onclick = () => {
+      if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz Oszołom (QR).'; return; }
+      showOverlay('qr');
+    };
+
+    // UX: automatyczne ustawienie komunikatów
+    updateAmount();
+
+    // Dodatkowo: zamknij kamerę przy zmianie zakładki/ukryciu strony
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopCamera();
     });
 
-    // Start
-    render();
+    // Fallback na wypadek braku HTTPS
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      document.getElementById('conn').textContent = 'Możliwy brak kamery (HTTPS zalecany)';
+    }
   </script>
 </body>
 </html>
