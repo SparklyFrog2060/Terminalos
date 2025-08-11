@@ -6,99 +6,51 @@
   <title>Terminal płatniczy — symulacja</title>
   <style>
     :root {
-      --bg: #0f1115;
-      --panel: #141824;
-      --accent: #2dd4bf;
-      --accent-2: #60a5fa;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --danger: #ef4444;
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --btn: #1f2937;
-      --btn-hover: #263244;
-      --screen: #0b0f18;
+      --bg: #0f1115; --panel: #141824; --accent: #2dd4bf; --accent-2: #60a5fa;
+      --text: #e5e7eb; --muted: #94a3b8; --danger: #ef4444; --ok: #22c55e; --warn: #f59e0b;
+      --btn: #1f2937; --btn-hover: #263244; --screen: #0b0f18;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      -webkit-font-smoothing: antialiased; line-height: 1.35;
-    }
-    .wrap {
-      min-height: 100dvh; display: grid; place-items: center; padding: 12px;
-    }
-    .terminal {
-      width: min(480px, 100%); background: var(--panel); border-radius: 18px;
-      box-shadow: 0 8px 40px rgba(0,0,0,.4); overflow: hidden; border: 1px solid #1f2333;
-    }
-    .topbar {
-      display:flex; justify-content: space-between; align-items: center; padding: 10px 14px;
-      background: #0b0e16; border-bottom: 1px solid #1f2333; font-size: 13px; color: var(--muted);
-    }
-    .screen {
-      background: linear-gradient(180deg, #0b0f18, #0b0f18 60%, #0a101c); color: #dbeafe;
-      padding: 14px; min-height: 135px; display:flex; flex-direction: column; gap: 8px; justify-content: center;
-    }
-    .amount {
-      font-variant-numeric: tabular-nums; font-weight: 700; font-size: 36px; letter-spacing: .5px;
-    }
-    .status { color: var(--muted); font-size: 14px; min-height: 20px; }
-    .hint { font-size: 12px; color: #8aa2c9; }
-    .grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px;
-    }
-    .btn {
-      background: var(--btn); color: var(--text); border: 1px solid #1f2333;
-      border-radius: 12px; padding: 14px; font-size: 18px; font-weight: 600;
-      display:flex; align-items:center; justify-content:center;
-      transition: background .15s ease, transform .05s ease;
-      user-select: none; -webkit-tap-highlight-color: transparent;
-    }
-    .btn:active { transform: translateY(1px); }
-    .btn:hover { background: var(--btn-hover); }
-    .btn.func { font-size: 15px; font-weight: 700; }
-    .funcs {
-      display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px 12px;
-    }
-    .btn.primary { background: #123; border-color: #254; color: #d1fae5; }
-    .btn.primary:hover { background: #0e2b3a; }
-    .btn.accent { background: #0e2230; border-color: #1f3b4f; color: #c7f9ff; }
-    .btn.ok { background: #0f2a1d; border-color: #1e5c3e; color: #bbf7d0; }
-    .btn.warn { background: #2d210a; border-color: #5a420f; color: #fed7aa; }
-    .btn.danger { background: #2b0f12; border-color: #5b1f25; color: #fecaca; }
-    .footer {
-      padding: 10px 12px; font-size: 12px; color: var(--muted); display:flex; justify-content: space-between; gap: 8px;
-      border-top: 1px solid #1f2333;
-    }
-    .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.72);
-      display:none; align-items: center; justify-content: center; z-index: 50;
-      backdrop-filter: blur(2px);
-    }
-    .modal {
-      width: min(520px, 96vw); background: #0b0f18; border: 1px solid #1f2333; border-radius: 14px; overflow: hidden;
-    }
-    .modal .head { display:flex; justify-content: space-between; align-items:center; padding: 10px 12px; background: #0a0d16; color: #9fb3d6; font-size: 13px; }
-    .modal .body { padding: 12px; display:grid; gap: 10px; }
-    .videoWrap {
-      position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #1f2333; background: #000;
-      aspect-ratio: 16/10; display:grid; place-items:center;
-    }
-    video { width: 100%; height: 100%; object-fit: cover; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; line-height:1.35; }
+    .wrap { min-height:100dvh; display:grid; place-items:center; padding:12px; }
+    .terminal { width:min(480px,100%); background:var(--panel); border-radius:18px; box-shadow:0 8px 40px rgba(0,0,0,.4); overflow:hidden; border:1px solid #1f2333; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0b0e16; border-bottom:1px solid #1f2333; font-size:13px; color:var(--muted); }
+    .screen { background:linear-gradient(180deg, #0b0f18, #0b0f18 60%, #0a101c); color:#dbeafe; padding:14px; min-height:160px; display:flex; flex-direction:column; gap:8px; justify-content:center; }
+    .amount { font-variant-numeric:tabular-nums; font-weight:700; font-size:36px; letter-spacing:.5px; }
+    .status { color:var(--muted); font-size:14px; min-height:20px; }
+    .hint { font-size:12px; color:#8aa2c9; }
+    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px; }
+    .btn { background:var(--btn); color:var(--text); border:1px solid #1f2333; border-radius:12px; padding:14px; font-size:18px; font-weight:600; display:flex; align-items:center; justify-content:center; transition:background .15s ease, transform .05s ease; user-select:none; -webkit-tap-highlight-color:transparent; }
+    .btn:active { transform:translateY(1px); }
+    .btn:hover { background:var(--btn-hover); }
+    .btn.func { font-size:15px; font-weight:700; }
+    .funcs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 12px 12px; }
+    .btn.primary { background:#123; border-color:#254; color:#d1fae5; }
+    .btn.primary:hover { background:#0e2b3a; }
+    .btn.accent { background:#0e2230; border-color:#1f3b4f; color:#c7f9ff; }
+    .btn.ok { background:#0f2a1d; border-color:#1e5c3e; color:#bbf7d0; }
+    .btn.warn { background:#2d210a; border-color:#5a420f; color:#fed7aa; }
+    .btn.danger { background:#2b0f12; border-color:#5b1f25; color:#fecaca; }
+    .footer { padding:10px 12px; font-size:12px; color:var(--muted); display:flex; justify-content:space-between; gap:8px; border-top:1px solid #1f2333; }
+
+    /* Wbudowany skaner karty w ekranie terminala */
+    .cardScan { display:none; gap:10px; margin-top:8px; }
+    .videoWrap { position:relative; border-radius:12px; overflow:hidden; border:1px solid #1f2333; background:#000; aspect-ratio: 16/10; display:grid; place-items:center; }
+    .videoWrap.small { aspect-ratio: 16/10; }
+    video { width:100%; height:100%; object-fit:cover; }
     canvas { display:none; }
-    .badge {
-      display:inline-flex; align-items:center; gap: 6px; font-size: 12px; padding: 6px 8px; border-radius: 999px;
-      background: #0f172a; border: 1px solid #1f2333; color: #cbd5e1;
-    }
-    .row { display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
-    .progress {
-      height: 8px; border-radius: 999px; background: #0f172a; border: 1px solid #1f2333; overflow:hidden;
-    }
-    .progress > span { display:block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s ease; }
-    .code { font-variant-numeric: tabular-nums; letter-spacing: 2px; font-weight: 800; }
-    .muted { color: var(--muted); }
+    .badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 8px; border-radius:999px; background:#0f172a; border:1px solid #1f2333; color:#cbd5e1; }
+    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .progress { height:8px; border-radius:999px; background:#0f172a; border:1px solid #1f2333; overflow:hidden; }
+    .progress > span { display:block; height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .2s ease; }
+    .muted { color:var(--muted); }
     .sr { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+    /* Modal: QR i BLIK */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:50; backdrop-filter:blur(2px); }
+    .modal { width:min(520px,96vw); background:#0b0f18; border:1px solid #1f2333; border-radius:14px; overflow:hidden; }
+    .modal .head { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#0a0d16; color:#9fb3d6; font-size:13px; }
+    .modal .body { padding:12px; display:grid; gap:10px; }
   </style>
   <!-- QR decoder -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -115,6 +67,22 @@
         <div class="amount" id="amount">0,00 zł</div>
         <div class="status" id="status">Wprowadź kwotę i wybierz metodę płatności.</div>
         <div class="hint" id="hint">Dostępne: Karta (zbliż), BLIK (6 cyfr), Oszołom (QR).</div>
+
+        <!-- Wbudowany skaner karty (pokazuje się po kliknięciu "Karta") -->
+        <div class="cardScan" id="cardScan" aria-live="polite">
+          <div class="videoWrap small">
+            <video id="videoCard" playsinline autoplay muted></video>
+            <canvas id="canvasCard"></canvas>
+          </div>
+          <div class="row">
+            <span class="badge" id="infoCard">Zasłoń obiektyw kartą/telefonem…</span>
+            <span class="badge" id="brightnessCard">Jasność: —</span>
+            <span class="badge" id="progressCard">Postęp: 0%</span>
+          </div>
+          <div class="progress" aria-label="Postęp wykrycia">
+            <span id="barCard"></span>
+          </div>
+        </div>
       </div>
 
       <div class="grid" aria-label="Klawiatura numeryczna">
@@ -145,7 +113,7 @@
     </div>
   </div>
 
-  <!-- Modal: Kamera / Karta / QR -->
+  <!-- Modal: QR -->
   <div class="overlay" id="overlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="head">
@@ -162,11 +130,6 @@
         </div>
         <div class="row">
           <span class="badge" id="infoBadge">Przygotowywanie...</span>
-          <span class="badge" id="brightnessBadge">Jasność: —</span>
-          <span class="badge" id="progressBadge">Postęp: 0%</span>
-        </div>
-        <div class="progress" aria-label="Postęp wykrycia">
-          <span id="progressBar"></span>
         </div>
         <div class="muted" id="modalHint">Udziel dostępu do kamery.</div>
       </div>
@@ -199,6 +162,25 @@
 
   <script>
     // ------------------------
+    // Pomoc: dźwięk 4500 Hz przez 0.6 s
+    // ------------------------
+    let audioCtx = null;
+    async function beep(freq = 4500, durationMs = 600, volume = 0.06) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.value = volume;
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start();
+        setTimeout(() => { try { osc.stop(); osc.disconnect(); } catch(_){} }, durationMs);
+      } catch (_) { /* cicho pomijamy */ }
+    }
+
+    // ------------------------
     // Prosta logika terminala
     // ------------------------
     const amountEl = document.getElementById('amount');
@@ -213,20 +195,14 @@
     const cancel   = document.getElementById('cancel');
 
     let cents = 0; // kwota w groszach
-
-    function fmtAmount(c) {
-      const z = (c/100).toFixed(2).replace('.', ',');
-      return `${z} zł`;
-    }
+    function fmtAmount(c) { const z = (c/100).toFixed(2).replace('.', ','); return `${z} zł`; }
     function updateAmount() {
       amountEl.textContent = fmtAmount(cents);
       statusEl.textContent = 'Wybierz metodę płatności.';
     }
     keypad.forEach(btn => {
       btn.addEventListener('click', () => {
-        const d = btn.dataset.key;
-        // wprowadzamy jak w terminalu: cyfra dopisuje grosze z przesunięciem
-        cents = Math.min(99999999, Math.max(0, cents*10 + Number(d)));
+        cents = Math.min(99999999, Math.max(0, cents*10 + Number(btn.dataset.key)));
         updateAmount();
       });
     });
@@ -234,14 +210,15 @@
     backBtn.onclick  = () => { cents = Math.floor(cents/10); updateAmount(); };
 
     cancel.onclick = () => {
-      cents = 0; updateAmount();
-      statusEl.textContent = 'Anulowano. Wprowadź kwotę ponownie.';
-      stopCamera();
+      stopCardScan();
+      stopCameraQR();
       hideOverlays();
+      statusEl.textContent = 'Anulowano. Wprowadź kwotę ponownie.';
+      cents = 0; updateAmount();
     };
 
     // ------------------------
-    // BLIK modal
+    // BLIK modal (z beep + reset po akceptacji)
     // ------------------------
     const blikOverlay = document.getElementById('blikOverlay');
     const blikAmount  = document.getElementById('blikAmount');
@@ -253,128 +230,100 @@
     const blikHint    = document.getElementById('blikHint');
 
     let blikCode = "";
-
     function showBlik() {
       blikAmount.textContent = fmtAmount(cents);
-      blikCode = "";
-      drawBlikCode();
+      blikCode = ""; drawBlikCode();
       blikHint.textContent = 'Wpisz 6 cyfr i naciśnij OK.';
       blikOverlay.style.display = 'flex';
       blikOverlay.setAttribute('aria-hidden', 'false');
     }
-    function hideBlik() {
-      blikOverlay.style.display = 'none';
-      blikOverlay.setAttribute('aria-hidden', 'true');
-    }
+    function hideBlik() { blikOverlay.style.display = 'none'; blikOverlay.setAttribute('aria-hidden', 'true'); }
     function drawBlikCode() {
       const view = (blikCode.padEnd(6, '—').slice(0,3) + ' ' + blikCode.padEnd(6, '—').slice(3,6))
       blikCodeEl.textContent = view;
     }
     blikPad.addEventListener('click', (e) => {
-      const v = e.target.dataset?.b;
-      if (!v) return;
-      if (blikCode.length < 6) {
-        blikCode += v;
-        drawBlikCode();
-      }
+      const v = e.target.dataset?.b; if (!v) return;
+      if (blikCode.length < 6) { blikCode += v; drawBlikCode(); }
     });
     blikClear.onclick = () => { blikCode = ""; drawBlikCode(); };
-    blikAccept.onclick = () => {
-      if (blikCode.length !== 6) {
-        blikHint.textContent = 'Kod musi mieć 6 cyfr.';
-        return;
-      }
+    blikAccept.onclick = async () => {
+      if (blikCode.length !== 6) { blikHint.textContent = 'Kod musi mieć 6 cyfr.'; return; }
       blikHint.textContent = 'Wysyłanie prośby o potwierdzenie w aplikacji...';
       blikAccept.disabled = true;
       setTimeout(() => {
         blikHint.textContent = 'Oczekiwanie na potwierdzenie banku...';
-        setTimeout(() => {
+        setTimeout(async () => {
           blikHint.textContent = 'Płatność zaakceptowana ✅';
+          await beep(4500, 600);
           statusEl.textContent = `BLIK: płatność ${fmtAmount(cents)} zakończona powodzeniem.`;
-          setTimeout(() => { hideBlik(); }, 1200);
-        }, 1400);
-      }, 900);
+          // reset terminala po BLIK
+          cents = 0; updateAmount();
+          setTimeout(() => { hideBlik(); }, 900);
+        }, 1200);
+      }, 800);
     };
     closeBlik.onclick = hideBlik;
-    blikBtn.onclick = () => {
-      if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz BLIK.'; return; }
-      showBlik();
-    };
+    blikBtn.onclick = () => { if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz BLIK.'; return; } showBlik(); };
 
     // ------------------------
-    // Kamera / Karta / QR
+    // Karta: skaner w ekranie terminala (kamera przednia)
     // ------------------------
-    const overlay      = document.getElementById('overlay');
-    const closeModal   = document.getElementById('closeModal');
-    const video        = document.getElementById('video');
-    const canvas       = document.getElementById('canvas');
-    const modeBadge    = document.getElementById('modeBadge');
-    const infoBadge    = document.getElementById('infoBadge');
-    const brightBadge  = document.getElementById('brightnessBadge');
-    const progressBadge= document.getElementById('progressBadge');
-    const progressBar  = document.getElementById('progressBar');
-    const modalHint    = document.getElementById('modalHint');
+    const cardScan     = document.getElementById('cardScan');
+    const videoCard    = document.getElementById('videoCard');
+    const canvasCard   = document.getElementById('canvasCard');
+    const infoCard     = document.getElementById('infoCard');
+    const brightCard   = document.getElementById('brightnessCard');
+    const progressCard = document.getElementById('progressCard');
+    const barCard      = document.getElementById('barCard');
 
-    let stream = null;
-    let rafId = null;
-    let mode = null; // 'card' | 'qr'
-    let darkScore = 0;
+    let streamCard = null;
+    let rafCard = null;
+    let cardActive = false;
 
-    // Tolerancja ciemności (wybaczająca, ale nie za duża)
-    const DARK_THRESHOLD = 50; // 0-255: przeciętna jasność; <50 uznajemy za "ciemno"
-    const REQUIRED_DARK_FRAMES = 10; // kolejne "ciemne" próbki (ok. ~1 s)
+    const DARK_THRESHOLD = 50;        // im mniejsze, tym trudniej "przyłożyć"
+    const REQUIRED_DARK_FRAMES = 10;  // ile kolejnych próbek "ciemno"
 
-    function showOverlay(m) {
-      mode = m;
-      overlay.style.display = 'flex';
-      overlay.setAttribute('aria-hidden', 'false');
-      modeBadge.textContent = (m === 'card') ? 'Tryb: Karta (zbliżeniowa)' : 'Tryb: Oszołom (QR)';
-      infoBadge.textContent = 'Uruchamianie kamery...';
-      brightBadge.textContent = 'Jasność: —';
-      progressBadge.textContent= 'Postęp: 0%';
-      progressBar.style.width = '0%';
-      modalHint.textContent = (m === 'card')
-        ? 'Zasłoń obiektyw kartą/telefonem — wykryjemy przyłożenie.'
-        : 'Skieruj kamerę na dowolny kod QR.';
-      startCamera();
-    }
-    function hideOverlay() {
-      overlay.style.display = 'none';
-      overlay.setAttribute('aria-hidden', 'true');
-    }
-    function hideOverlays() {
-      hideOverlay(); hideBlik();
+    function setCardProgress(p) {
+      const pct = Math.max(0, Math.min(100, Math.round(p*100)));
+      barCard.style.width = pct + '%';
+      progressCard.textContent = 'Postęp: ' + pct + '%';
     }
 
-    async function startCamera() {
-      stopCamera();
+    async function startCardScan() {
+      stopCardScan();
+      cardActive = true;
+      cardScan.style.display = 'grid';
+      infoCard.textContent = 'Uruchamianie kamery...';
+      brightCard.textContent = 'Jasność: —';
+      setCardProgress(0);
+
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+        streamCard = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'user' } }, // kamera przednia
           audio: false
         });
-        video.srcObject = stream;
-        await video.play();
-        canvas.width = video.videoWidth || 640;
-        canvas.height= video.videoHeight || 360;
-        darkScore = 0;
-        infoBadge.textContent = 'Kamera gotowa';
-        loop();
+        videoCard.srcObject = streamCard;
+        await videoCard.play();
+        canvasCard.width = videoCard.videoWidth || 640;
+        canvasCard.height = videoCard.videoHeight || 360;
+        infoCard.textContent = 'Zasłoń obiektyw kartą/telefonem — wykryjemy przyłożenie.';
+        loopCard();
       } catch (e) {
-        infoBadge.textContent = 'Brak dostępu do kamery';
-        modalHint.textContent = 'Zezwól na aparat i otwórz przez HTTPS.';
+        infoCard.textContent = 'Brak dostępu do kamery';
       }
     }
-    function stopCamera() {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = null;
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
+
+    function stopCardScan() {
+      cardActive = false;
+      if (rafCard) cancelAnimationFrame(rafCard);
+      rafCard = null;
+      if (streamCard) { streamCard.getTracks().forEach(t => t.stop()); streamCard = null; }
+      cardScan.style.display = 'none';
+      setCardProgress(0);
     }
+
     function avgBrightness(ctx, w, h) {
-      // Szybkie próbkowanie co 4 piksele
       const step = 4;
       const img = ctx.getImageData(0, 0, w, h).data;
       let sum = 0, count = 0;
@@ -382,80 +331,128 @@
         for (let x=0; x<w; x+=step) {
           const i = (y*w + x) * 4;
           const r = img[i], g = img[i+1], b = img[i+2];
-          // luminancja percepcyjna
           const Y = 0.2126*r + 0.7152*g + 0.0722*b;
           sum += Y; count++;
         }
       }
       return sum / count;
     }
-    function setProgress(p) {
-      const pct = Math.max(0, Math.min(100, Math.round(p*100)));
-      progressBar.style.width = pct + '%';
-      progressBadge.textContent = 'Postęp: ' + pct + '%';
-    }
 
-    function loop() {
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width, h = canvas.height;
-      ctx.drawImage(video, 0, 0, w, h);
+    let darkScore = 0;
+    function loopCard() {
+      const ctx = canvasCard.getContext('2d');
+      const w = canvasCard.width, h = canvasCard.height;
+      ctx.drawImage(videoCard, 0, 0, w, h);
 
-      if (mode === 'card') {
-        // detekcja ciemności
-        const b = avgBrightness(ctx, w, h);
-        brightBadge.textContent = 'Jasność: ' + Math.round(b);
-        if (b < DARK_THRESHOLD) {
-          darkScore = Math.min(REQUIRED_DARK_FRAMES, darkScore + 1);
-        } else {
-          // lekka histereza: zmniejszaj powoli
-          darkScore = Math.max(0, darkScore - 1);
-        }
-        setProgress(darkScore / REQUIRED_DARK_FRAMES);
+      const b = avgBrightness(ctx, w, h);
+      brightCard.textContent = 'Jasność: ' + Math.round(b);
 
-        if (darkScore >= REQUIRED_DARK_FRAMES) {
-          infoBadge.textContent = 'Wykryto przyłożenie karty ✅';
-          statusEl.textContent = `Karta: płatność ${fmtAmount(cents)} zaakceptowana.`;
-          setTimeout(() => { hideOverlay(); stopCamera(); }, 400);
-          return;
-        }
-      } else if (mode === 'qr') {
-        // skan QR
-        const img = ctx.getImageData(0, 0, w, h);
-        const code = jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' });
-        if (code) {
-          infoBadge.textContent = 'QR wykryty ✅';
-          statusEl.textContent = `Oszołom: przyjęto kod: ${code.data.substring(0,80)}${code.data.length>80?'…':''}`;
-          setProgress(1);
-          setTimeout(() => { hideOverlay(); stopCamera(); }, 400);
-          return;
-        } else {
-          infoBadge.textContent = 'Skanowanie...';
-        }
+      if (b < DARK_THRESHOLD) {
+        darkScore = Math.min(REQUIRED_DARK_FRAMES, darkScore + 1);
+      } else {
+        darkScore = Math.max(0, darkScore - 1);
+      }
+      setCardProgress(darkScore / REQUIRED_DARK_FRAMES);
+
+      if (darkScore >= REQUIRED_DARK_FRAMES) {
+        infoCard.textContent = 'Wykryto przyłożenie karty ✅';
+        (async () => { await beep(4500, 600); })();
+        statusEl.textContent = `Karta: płatność ${fmtAmount(cents)} zaakceptowana.`;
+        // reset terminala po karcie
+        cents = 0; updateAmount();
+        setTimeout(() => { stopCardScan(); darkScore = 0; }, 400);
+        return;
       }
 
-      rafId = requestAnimationFrame(loop);
+      if (cardActive) rafCard = requestAnimationFrame(loopCard);
     }
-
-    closeModal.onclick = () => { hideOverlay(); stopCamera(); };
 
     cardBtn.onclick = () => {
       if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz Kartę.'; return; }
-      showOverlay('card');
+      darkScore = 0;
+      startCardScan();
     };
+
+    // ------------------------
+    // QR (Oszołom): w modalu, kamera przednia, bez resetu kwoty
+    // ------------------------
+    const overlay      = document.getElementById('overlay');
+    const closeModal   = document.getElementById('closeModal');
+    const video        = document.getElementById('video');
+    const canvas       = document.getElementById('canvas');
+    const modeBadge    = document.getElementById('modeBadge');
+    const infoBadge    = document.getElementById('infoBadge');
+    const modalHint    = document.getElementById('modalHint');
+
+    let streamQR = null;
+    let rafQR = null;
+
+    function showOverlay() {
+      overlay.style.display = 'flex';
+      overlay.setAttribute('aria-hidden', 'false');
+      modeBadge.textContent = 'Tryb: Oszołom (QR)';
+      infoBadge.textContent = 'Uruchamianie kamery...';
+      modalHint.textContent = 'Skieruj kamerę na dowolny kod QR.';
+      startCameraQR();
+    }
+    function hideOverlay() {
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    function hideOverlays() { hideOverlay(); hideBlik(); }
+
+    async function startCameraQR() {
+      stopCameraQR();
+      try {
+        streamQR = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'user' } }, // kamera przednia
+          audio: false
+        });
+        video.srcObject = streamQR;
+        await video.play();
+        canvas.width = video.videoWidth || 640;
+        canvas.height= video.videoHeight || 360;
+        infoBadge.textContent = 'Skanowanie...';
+        loopQR();
+      } catch (e) {
+        infoBadge.textContent = 'Brak dostępu do kamery';
+        modalHint.textContent = 'Zezwól na aparat i otwórz przez HTTPS.';
+      }
+    }
+    function stopCameraQR() {
+      if (rafQR) cancelAnimationFrame(rafQR);
+      rafQR = null;
+      if (streamQR) { streamQR.getTracks().forEach(t => t.stop()); streamQR = null; }
+    }
+
+    function loopQR() {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.drawImage(video, 0, 0, w, h);
+      const img = ctx.getImageData(0, 0, w, h);
+      const code = jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' });
+      if (code) {
+        infoBadge.textContent = 'QR wykryty ✅';
+        statusEl.textContent = `Oszołom: przyjęto kod: ${code.data.substring(0,80)}${code.data.length>80?'…':''}`;
+        setTimeout(() => { hideOverlay(); stopCameraQR(); }, 400);
+        return;
+      }
+      rafQR = requestAnimationFrame(loopQR);
+    }
+
+    closeModal.onclick = () => { hideOverlay(); stopCameraQR(); };
     qrBtn.onclick = () => {
       if (cents <= 0) { statusEl.textContent = 'Podaj kwotę, zanim wybierzesz Oszołom (QR).'; return; }
-      showOverlay('qr');
+      showOverlay();
     };
 
-    // UX: automatyczne ustawienie komunikatów
+    // ------------------------
+    // UX i fallbacki
+    // ------------------------
     updateAmount();
-
-    // Dodatkowo: zamknij kamerę przy zmianie zakładki/ukryciu strony
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) stopCamera();
+      if (document.hidden) { stopCardScan(); stopCameraQR(); }
     });
-
-    // Fallback na wypadek braku HTTPS
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       document.getElementById('conn').textContent = 'Możliwy brak kamery (HTTPS zalecany)';
     }
